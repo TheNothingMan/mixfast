@@ -17,19 +17,47 @@ String.prototype.timeToFloat = function() {
         return parseFloat(this);
     }
 }
-
-window.onerror = function(msg, url, line, col, error) {
-	alert("Error: "+error+"\n at "+ line+", "+col);
-};
 		// for legacy browsers
 		const AudioContext = window.AudioContext || window.webkitAudioContext;
-		const audioContext = new AudioContext();
-		const master = audioContext.createGain();
+		//const audioContext = new AudioContext();
+		//const master = audioContext.createGain();
+
+		let audioContext = null;
+		let master;
+
+		function createAudioContext() {
+			if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+			if (audioContext.state === "suspended") audioContext.resume();
+			master = audioContext.createGain();
+			master.connect(audioContext.destination);
+			// pass it into the audio context
+			for (var i = 0; i<audioElements.length; i++){
+					//tracks.push(audioContext.createMediaElementSource(audioElements[i]));
+					//gainNodes.push(audioContext.createGain());
+					//tracks[i].connect(gainNodes[i]).connect(audioContext.destination);
+					tracks.push(new AudioTrack(audioElements[i], audioContext, master));
+					bindVolume(i);
+			}
+		}
+
+		function unlockiOSAudio() {
+			const buffer = audioContext.createBuffer(1, 1, 22050);
+			const source = audioContext.createBufferSource();
+			source.buffer = buffer;
+			source.connect(audioContext.destination);
+			source.start(0);
+		}
+
+		// iOS Unlock
+		//document.addEventListener("touchstart", createAudioContext, { once: true });
+		//document.addEventListener("click", createAudioContext, { once: true });
+
 		class AudioTrack {
 			constructor (source, audioContext, master) {
 				this.gainNode = audioContext.createGain();
 				this.source = audioContext.createMediaElementSource(source);
-				this.source.connect(this.gainNode).connect(master);
+				this.source.connect(this.gainNode);
+				this.gainNode.connect(master);
 				this.gain = 2;
 				this.soloed = false;
 				this.muted = false;
@@ -66,7 +94,7 @@ window.onerror = function(msg, url, line, col, error) {
 		var buttonText;
 		var muteActive = false;
 		var soloedTracks = 0;
-		var numTracks = 0;
+		var numTracks;
         var loop = false;
         var loopStart = 0;
 		var loopEnd = 20;
@@ -80,20 +108,22 @@ window.onerror = function(msg, url, line, col, error) {
 			numTracks = audioElements.length;
 			currentText = document.getElementById("current");
 			buttonText = document.getElementById("buttonText");
-			// pass it into the audio context
-			for (var i = 0; i<audioElements.length; i++){
-					//tracks.push(audioContext.createMediaElementSource(audioElements[i]));
-					//gainNodes.push(audioContext.createGain());
-					//tracks[i].connect(gainNodes[i]).connect(audioContext.destination);
-					tracks.push(new AudioTrack(audioElements[i], audioContext, master));
-					bindVolume(i);
-			}
+			
             loadingGif = document.querySelector('#loading-gif');
 			playButton = document.querySelector('button');
 
-			playButton.addEventListener('click', function() {
+			playButton.addEventListener('click', async function() {
 				// check if context is in suspended state (autoplay policy)
+				if (!audioContext) {
+					console.log("Creating audio context");
+					createAudioContext();
+					await audioContext.resume();
+					unlockiOSAudio
+				}
+				console.log("State: "+audioContext.state);
+				//audioContext.resume();
 				if (audioContext.state === 'suspended') {
+					console.log("Resuming suspended audioContext");
 					audioContext.resume();
 				}
 
@@ -101,7 +131,7 @@ window.onerror = function(msg, url, line, col, error) {
 				if (this.dataset.playing === 'false') {
 					if (numTracks <= 0) {
                         loadingGif.style.opacity = 0;
-						playAll();
+						setTimeout(() => playAll(), 0);
                     }
                     //console.log(numTracks);
 					//console.log("Playing");
@@ -114,7 +144,7 @@ window.onerror = function(msg, url, line, col, error) {
 			}, false);
 			
 			//Init master fader
-			master.connect(audioContext.destination);
+			//master.connect(audioContext.destination);
 			document.querySelector("#master").addEventListener('input', function() {
 					master.gain.value = this.value;
 				}, false);
@@ -124,14 +154,14 @@ window.onerror = function(msg, url, line, col, error) {
                 if (el.readyState==4) {
                     numTracks -= 1;
                 }
-				/*el.addEventListener("canplaythrough", function() {
+				el.addEventListener("canplaythrough", function() {
 					numTracks = numTracks - 1;
 					//console.log(numTracks);
 					if ((numTracks <= 0) && (playButton.dataset.playing === "true")) {
                         loadingGif.style.opacity = 0;
                         playAll();
 					}
-				});*/
+				});
 				
 				el.addEventListener("waiting", function() {
 					if (numTracks < audioElements.length) {
@@ -355,6 +385,12 @@ window.onerror = function(msg, url, line, col, error) {
 			});
 		}
 		
+		function view(url) {
+			var viewer = document.getElementById("viewer");
+			viewer.setAttribute("src", url);
+			console.log(url);			
+		}
+
 		function moveMarker() {
 			loopMarker.style.left = seekbarPosition.width*loopStart/dur+"px";
 			loopMarker.style.width = seekbarPosition.width*(loopEnd-loopStart)/dur+"px";
@@ -415,14 +451,3 @@ window.onerror = function(msg, url, line, col, error) {
                 }
             }*/
 		});
-
-		function updateState() {
-			numTracks = numTracks - 1;
-			var playButton = document.querySelector("button");
-			var loadingGif = document.querySelector('#loading-gif');
-			console.log(numTracks);
-			if ((numTracks <= 0) && (playButton.dataset.playing === "true")) {
-				loadingGif.style.opacity = 0;
-				playAll();
-			}
-		}

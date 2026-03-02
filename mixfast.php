@@ -13,7 +13,7 @@ if(!isset($_SESSION['loggedin'])) {
 	<meta charset="utf-8">
 	<?php echo "<title>".$title."</title>" ?>
 	<link rel = "stylesheet" type = "text/css" href = "mix.css" />
-	<script type="text/javascript" src="mixfast_debug.js"></script>
+	<script type="text/javascript" src="mixfast.js"></script>
 </head>
 <body>
 	<div id="caption_wrap">
@@ -59,7 +59,7 @@ if(!isset($_SESSION['loggedin'])) {
 	<a class="mixbutton" onclick="reset()">Reset mixer</a>
 	<a class="mixbutton mute" onclick="unMuteAll()">Mute off</a>
 	<a class="mixbutton solo" onclick="unSoloAll()">Solo off</a>
-	</div></div>
+	</div>
 	<?php
 		$phpfiles = glob($dir."/*.{mp3}",GLOB_BRACE);
 		echo "<div class='content-inner'>";
@@ -68,18 +68,37 @@ if(!isset($_SESSION['loggedin'])) {
 		foreach($phpfiles as $phpfile)
 		{	$phpfile = utf8_encode($phpfile);
 			echo "<div class='track'>";
-			echo "<a class='tracklane'>".basename($phpfile,".mp3")."</a>".
+			#echo "<a class='mixbutton view' name='".$i."' onclick='view(\"".$dir."/PDF/".basename($phpfile,".mp3").".pdf\")'>V</a>".
+			#echo "<img class='mixbutton view' src='note.svg' name='".$i."' onclick='view(\"pdfjs/web/viewer.html?file=../../".$dir."/".basename($phpfile,".mp3").".pdf\")'/>".
+			echo "<a class='mixbutton download' href='".$phpfile."' download='".$title."_".basename($phpfile,".mp3")."'><img class='download_pic' src='download.svg'/></a>".
+			"<a class='tracklane'>".basename($phpfile,".mp3")."</a>".
 			"<p class='loading-text'>Loading...</p>".
 			"<a class='mixbutton solo' name=".$i."' onclick='solo(this)'>S</a>".
 			"<a class='mixbutton mute' name=".$i."' onclick='mute(this)'>M</a>".
-			"<audio preload='auto' oncanplaythrough='updateState()' src='"
+			"<audio playsinline preload='auto' src='"
 			.$phpfile."' type='audio/ffmpeg'></audio><input type='range' id='volume"
 			.$i."' min='0' max='3' value='2' step='0.01'><br>";
 			$i += 1;
 			echo "</div>";
 		}
 		echo "</div>";
+		$pdffiles = glob($dir."/*.{pdf}",GLOB_BRACE);
+		if (count($pdffiles) > 0) {
+			echo "<div id='pdf_controls'>";
+			echo "<label for='pdf_selector'>Noten auswählen:</label>";
+			echo "<select id='pdf_selector' onclick='view(this.value)'>".
+			"<option value='' disabled selected hidden>Noten auswählen</option>";
+			natsort($pdffiles);
+			foreach($pdffiles as $pdffile)
+			{	$pdffile = utf8_encode($pdffile);
+				echo "<option value='pdfjs/web/viewer.html?file=../../".$dir."/".basename($pdffile)."'>".basename($pdffile)."</option>";
+			}
+			echo "</select>";
+			echo "</div>";
+			echo "<iframe id='viewer' src='' type='application/pdf'/>";
+		}
 	?>
-<button onclick="playAll()">ClickMe</button>
+	<div class="viewer_wrapper"><embed id="viewer" src="Carol_of_the_bells/PDF/01_Floete_.pdf" type="application/pdf"/></div>
+	
 </body>
 </html>

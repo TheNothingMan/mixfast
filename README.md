@@ -11,6 +11,7 @@ Features:
 * A-B loop can be used for practising difficult parts
 * navigation marks (study signs, song parts etc.) can be added easily with a file named bookmarks.txt for each directory
 * position logging for easy creation of bookmarks files
+* sheet music display (PDF, requires PDFjs to work)
 * password protection
 * only uses plain javascript without any external libraries
 * web-based and cross-plattform
@@ -19,7 +20,7 @@ Roadmap:
 * making it work on iOS...
 * panning for channel separation "me"-"others"
 * tempo change
-* sheet music display, eventually linked to playback position
+* sheet music display linked to playback position
 * jinja script to create offline versions of a page without the need for a php server
 
 
